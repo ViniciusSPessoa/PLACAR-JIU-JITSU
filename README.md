@@ -2,6 +2,8 @@
 
 Placar offline da Academia de Jiu-Jitsu Sergio Corrêa. Abra [index.html](index.html) em um navegador desktop atual e mantenha os arquivos e pastas do projeto juntos.
 
+[Versão Windows 1.0.0, instruções de compilação e relatório de testes](docs/windows-v1.0.0.md)
+
 ## Operação
 
 1. Digite os nomes nos cantos branco e vermelho. Abra **Configurações** e ajuste os campos **Min** e **Seg**. A duração padrão é cinco minutos e os valores aceitos vão de 00:01 a 99:59.
