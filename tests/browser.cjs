@@ -22,7 +22,7 @@ async function until(check, description) {
 
 async function run() {
     const profile = await mkdtemp(join(tmpdir(), 'bjj-test-'));
-    const screenshots = join(root, 'docs', 'capturas');
+    const screenshots = join(root, 'docs', 'capturas', 'arena');
     await mkdir(screenshots, { recursive: true });
     const chrome = spawn(executable, ['--headless', '--window-size=1280,720', '--no-first-run', '--disable-background-networking',
         '--remote-debugging-port=0', '--user-data-dir=' + profile, 'about:blank'], {
@@ -93,6 +93,8 @@ async function run() {
         const storedKey = 'placar-bjj:match:v1';
         const expectStatus = status => until(async () => (await text('#clock-status')) === status, status);
         const keep = selector => click('#confirmation button[value="' + selector + '"]');
+        const openSettings = () => click('#settings:not([open]) summary');
+        const closeSettings = () => click('#settings[open] summary');
         const points = corner => text('.athlete-' + corner + ' [data-points]');
 
         for (const method of ['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable']) await send(method);
@@ -122,19 +124,23 @@ async function run() {
             await click(selector + '[data-delta="-1"]');
             assert.equal(await text('.athlete-' + corner + ' [data-count="' + stat + '"]'), '0');
         }
+        await openSettings();
         await click('#shortcuts');
         await press('9');
         assert.equal(await points(1), '3');
         await click('#shortcut-dialog button');
+        await closeSettings();
         await click('#new-match');
         await keep('cancel');
         assert.equal(await points(0), '2');
 
+        await openSettings();
         await setInput('minutes', '00');
         await setInput('seconds', '60');
         assert.equal(await js('document.getElementById("toggle-clock").disabled'), true);
         await setInput('seconds', '03');
         assert.equal(await text('#clock-time'), '00:03');
+        await closeSettings();
         await press(' ');
         await expectStatus('Em andamento');
         assert.equal(await js('document.querySelector(".clock").classList.contains("is-urgent")'), true);
@@ -184,26 +190,43 @@ async function run() {
         await load();
         assert.equal(await text('#volume-value'), '42%');
         await setInput('volume', '75');
+        await openSettings();
         await clickNative('#test-audio');
         await until(() => js('!document.querySelector("audio").paused'), 'reprodução do MP3').catch(async error => {
             throw new Error(error.message + ': ' + await text('#notice'));
         });
         await js('document.querySelector("audio").pause()');
+        await closeSettings();
 
-        await setInput('athlete-0', 'Atleta Branco');
-        await setInput('athlete-1', 'Atleta Vermelho');
-        await press('1');
-        await press('3');
-        await press('8');
+        const names = ['Maria Eduarda Valentina Ribeiro Albuquerque', 'João Pedro Alexandre dos Santos Montenegro'];
+        await setInput('athlete-0', names[0]);
+        await setInput('athlete-1', names[1]);
+        await js(`(() => {
+            const score = (corner, value) => document.querySelector('.athlete-' + corner + ' [data-score="' + value + '"]').click();
+            for (let i = 0; i < 23; i++) score(0, 4);
+            score(0, 3);
+            score(0, 3);
+            for (let i = 0; i < 31; i++) score(1, 4);
+        })()`);
+        assert.equal(await points(0), '98');
+        assert.equal(await points(1), '124');
         await click('.athlete-0 [data-adjust="advantages"][data-delta="1"]');
         await click('.athlete-1 [data-adjust="penalties"][data-delta="1"]');
         await sleep(850);
+        async function capture(name) {
+            const { data } = await send('Page.captureScreenshot', { format: 'png' });
+            await writeFile(join(screenshots, name + '.png'), Buffer.from(data, 'base64'));
+        }
         for (const [width, height] of sizes) {
             await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
             const layout = await js(`(() => {
                 const arena = document.querySelector('.arena').getBoundingClientRect();
                 const panels = [...document.querySelectorAll('.arena > section')].map(el => el.getBoundingClientRect());
-                const controls = [...document.querySelectorAll('.shell button, .shell input')].map(el => el.getBoundingClientRect());
+                const controls = [...document.querySelectorAll('.shell button, .shell input, .shell summary')]
+                    .filter(el => !el.closest('.settings:not([open]) .clock-settings'))
+                    .map(el => el.getBoundingClientRect());
+                const names = [...document.querySelectorAll('.name-preview')];
+                const scores = [...document.querySelectorAll('[data-points]')];
                 return {
                     viewport: [innerWidth, innerHeight],
                     fits: document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight,
@@ -212,15 +235,56 @@ async function run() {
                     fills: arena.height / innerHeight > .72 && arena.width / innerWidth > .90,
                     visible: controls.every(r => r.width > 0 && r.height > 0 && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight),
                     uniqueIds: new Set([...document.querySelectorAll('[id]')].map(el => el.id)).size === document.querySelectorAll('[id]').length,
+                    names: names.map(el => el.textContent),
+                    namesFit: names.every(el => el.scrollWidth <= el.clientWidth && el.getBoundingClientRect().height <= parseFloat(getComputedStyle(el).lineHeight) * 2.1),
+                    scoresFit: scores.every(el => {
+                        const a = el.getBoundingClientRect();
+                        const b = el.closest('.score').getBoundingClientRect();
+                        return a.left >= b.left && a.right <= b.right && a.top >= b.top && a.bottom <= b.bottom;
+                    }),
                     noOverlap: controls.every((a, i) => controls.slice(i + 1).every(b => a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom))
                 };
             })()`);
             assert.deepEqual(layout, { viewport: [width, height], fits: true, symmetric: true, aligned: true,
-                fills: true, visible: true, uniqueIds: true, noOverlap: true });
-            const { data } = await send('Page.captureScreenshot', { format: 'png' });
-            await writeFile(join(screenshots, width + 'x' + height + '.png'), Buffer.from(data, 'base64'));
+                fills: true, visible: true, uniqueIds: true, names, namesFit: true, scoresFit: true, noOverlap: true });
+            await capture(width + 'x' + height);
             console.log(width + '×' + height + ' — layout, controles e captura OK');
         }
+        await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
+        await openSettings();
+        await until(() => js('document.getElementById("settings").open'), 'configurações abertas');
+        await setInput('minutes', '00');
+        await setInput('seconds', '12');
+        await clickNative('#toggle-clock');
+        await expectStatus('Em andamento');
+        await sleep(200);
+        assert.equal(await js('document.getElementById("duration-fields").disabled'), true);
+        assert.equal(await js(`(() => {
+            const settings = document.querySelector('.clock-settings').getBoundingClientRect();
+            return [...document.querySelectorAll('[data-points]')].every(score => score.getBoundingClientRect().top >= settings.bottom);
+        })()`), true, 'o painel aberto deve manter as duas pontuações visíveis');
+        await capture('1366x768-configuracoes');
+        await closeSettings();
+        await until(() => js('!document.getElementById("settings").open'), 'configurações fechadas');
+        await capture('1366x768-em-andamento');
+        await click('#toggle-clock');
+        await expectStatus('Pausado');
+        await capture('1366x768-pausado');
+        await click('#toggle-clock');
+        const progress = () => js('Number(document.querySelector(".clock").style.getPropertyValue("--final-progress"))');
+        const first = await until(async () => (await progress()) >= .45 && await progress(), 'realce progressivo do cronômetro');
+        await sleep(420);
+        assert.ok(await progress() > first);
+        await capture('1366x768-segundos-finais');
+        await expectStatus('Encerrado');
+        await sleep(320);
+        await capture('1366x768-encerrado');
+        console.log('Nomes longos, placares de 2 e 3 dígitos, estados do cronômetro e painel retrátil OK.');
+        await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+        await press('1');
+        assert.equal(await js('getComputedStyle(document.querySelector(".score-flash.flash")).animationName'), 'none');
+        assert.equal(await js('getComputedStyle(document.querySelector(".score-flash.flash")).opacity'), '1');
+        await send('Emulation.setEmulatedMedia', { features: [] });
         await send('Emulation.clearDeviceMetricsOverride');
         await send('Page.bringToFront');
         await js(`(() => {

@@ -16,12 +16,14 @@ test('cores do placar e comandos principais excedem contraste de 4,5:1', () => {
     const pairs = [
         [token('white'), token('panel')],
         [token('muted'), token('panel')],
-        [token('gold'), '#282219'],
-        [token('white'), '#121318'],
-        ['#ff7589', '#121317'],
-        ['#ffffff', '#bd1b35'],
-        ['#ffffff', '#d8203d'],
-        ['#15161a', '#eceef3']
+        [token('white'), token('white-field')],
+        [token('white'), token('red-field')],
+        [token('gold'), token('white-field')],
+        [token('gold'), token('red-field')],
+        [token('muted'), token('base')],
+        [token('alert'), '#15161a'],
+        [token('white'), token('red-corner')],
+        [token('ink'), token('white-corner')]
     ];
     for (const [foreground, background] of pairs) {
         const [low, high] = [luminance(foreground), luminance(background)].sort((a, b) => a - b);

@@ -17,7 +17,28 @@
                 <div><h1>Placar BJJ</h1><p>Academia de Jiu-Jitsu Sergio Corrêa</p></div>
             </div>
             <div class="header-actions">
-                <button id="shortcuts" type="button">Atalhos</button>
+                <details class="settings" id="settings">
+                    <summary>Configurações</summary>
+                    <div class="clock-settings">
+                        <form id="duration-form" novalidate>
+                            <fieldset id="duration-fields">
+                                <legend>Duração da luta</legend>
+                                <div class="duration">
+                                    <label for="minutes"><input id="minutes" type="text" inputmode="numeric" value="05" maxlength="2" autocomplete="off"> Min</label>
+                                    <span aria-hidden="true">:</span>
+                                    <label for="seconds"><input id="seconds" type="text" inputmode="numeric" value="00" maxlength="2" autocomplete="off"> Seg</label>
+                                </div>
+                            </fieldset>
+                            <p id="duration-error" class="error" role="status"></p>
+                        </form>
+                        <div class="audio-settings">
+                            <label for="volume">Volume <span id="volume-value">75%</span></label>
+                            <input id="volume" type="range" min="0" max="100" value="75">
+                            <button id="test-audio" type="button">Testar sinal</button>
+                        </div>
+                        <button id="shortcuts" type="button">Consultar atalhos</button>
+                    </div>
+                </details>
                 <button id="fullscreen" type="button" aria-keyshortcuts="F">Tela cheia</button>
                 <button id="new-match" type="button">Nova luta</button>
             </div>
@@ -27,7 +48,10 @@
             <section class="athlete athlete-0" data-athlete="0" aria-label="Canto branco">
                 <div class="athlete-head">
                     <label for="athlete-0">Canto branco</label>
-                    <input id="athlete-0" data-name placeholder="Atleta 1" maxlength="50" autocomplete="off">
+                    <div class="name-field">
+                        <input id="athlete-0" data-name placeholder="Atleta 1" maxlength="50" autocomplete="off">
+                        <span class="name-preview" aria-hidden="true">Atleta 1</span>
+                    </div>
                 </div>
                 <div class="score">
                     <span>Pontos</span>
@@ -67,29 +91,14 @@
                 <button id="toggle-clock" class="primary" type="button" aria-keyshortcuts="Space">Iniciar</button>
                 <button id="reset-clock" class="quiet" type="button">Reiniciar tempo</button>
 
-                <div class="clock-settings">
-                    <form id="duration-form" novalidate>
-                        <fieldset id="duration-fields">
-                            <legend>Duração da luta</legend>
-                            <div class="duration">
-                                <label for="minutes"><input id="minutes" type="text" inputmode="numeric" value="05" maxlength="2" autocomplete="off"> Min</label>
-                                <span aria-hidden="true">:</span>
-                                <label for="seconds"><input id="seconds" type="text" inputmode="numeric" value="00" maxlength="2" autocomplete="off"> Seg</label>
-                            </div>
-                        </fieldset>
-                        <p id="duration-error" class="error" role="status"></p>
-                    </form>
-                    <div class="audio-settings">
-                        <label for="volume">Volume <span id="volume-value">75%</span></label>
-                        <input id="volume" type="range" min="0" max="100" value="75">
-                        <button id="test-audio" type="button">Testar sinal</button>
-                    </div>
-                </div>
             </section>
             <section class="athlete athlete-1" data-athlete="1" aria-label="Canto vermelho">
                 <div class="athlete-head">
                     <label for="athlete-1">Canto vermelho</label>
-                    <input id="athlete-1" data-name placeholder="Atleta 2" maxlength="50" autocomplete="off">
+                    <div class="name-field">
+                        <input id="athlete-1" data-name placeholder="Atleta 2" maxlength="50" autocomplete="off">
+                        <span class="name-preview" aria-hidden="true">Atleta 2</span>
+                    </div>
                 </div>
                 <div class="score">
                     <span>Pontos</span>

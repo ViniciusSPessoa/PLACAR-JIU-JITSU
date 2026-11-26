@@ -37,6 +37,7 @@
     const athletes = [...document.querySelectorAll('[data-athlete]')].map(panel => ({
         panel,
         name: panel.querySelector('[data-name]'),
+        namePreview: panel.querySelector('.name-preview'),
         points: panel.querySelector('[data-points]'),
         history: panel.querySelector('[data-history]'),
         undo: panel.querySelector('[data-undo]'),
@@ -97,14 +98,29 @@
         toggle.disabled = state.status === 'finished' || !durationValid;
         durationFields.disabled = state.status !== 'ready';
         reset.disabled = state.status === 'ready';
-        clock.classList.toggle('is-urgent', state.status === 'running' && state.remaining <= 10000);
+        const urgent = state.status === 'running' && state.remaining <= 10000;
+        clock.dataset.phase = state.status;
+        clock.classList.toggle('is-urgent', urgent);
+        if (urgent) {
+            clock.style.setProperty('--final-progress', (1 - state.remaining / 10000).toFixed(3));
+        } else {
+            clock.style.removeProperty('--final-progress');
+        }
         clock.classList.toggle('is-finished', state.status === 'finished');
+    }
+
+    function renderName(refs, name) {
+        setText(refs.namePreview, name || refs.name.placeholder);
+        refs.namePreview.toggleAttribute('data-long', name.length > 28);
     }
 
     function renderAthlete(index, { syncName = false } = {}) {
         const refs = athletes[index];
         const athlete = state.athletes[index];
-        if (syncName) refs.name.value = athlete.name;
+        if (syncName) {
+            refs.name.value = athlete.name;
+            renderName(refs, athlete.name);
+        }
         const points = String(match.points(index));
         refs.points.dataset.digits = Math.min(points.length, 4);
         setText(refs.points, points);
@@ -251,6 +267,7 @@
     athletes.forEach((refs, index) => {
         refs.name.addEventListener('input', () => {
             match.rename(index, refs.name.value);
+            renderName(refs, state.athletes[index].name);
             save();
         });
         refs.panel.addEventListener('click', event => {
@@ -319,7 +336,7 @@
             || event.altKey || event.shiftKey || confirmation.open || shortcutDialog.open
             || event.target.isContentEditable || event.target.closest('input, textarea, select, [role="textbox"]')) return;
         const pressed = event.key.toLowerCase();
-        if (pressed === ' ' && !event.target.closest('button, a')) {
+        if (pressed === ' ' && !event.target.closest('button, a, summary')) {
             event.preventDefault();
             handleClock();
         } else if (Object.hasOwn(shortcuts, pressed)) {
