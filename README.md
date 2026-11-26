@@ -2,7 +2,7 @@
 
 Placar offline da Academia de Jiu-Jitsu Sergio Corrêa. Abra [index.html](index.html) em um navegador desktop atual e mantenha os arquivos e pastas do projeto juntos.
 
-[Versão Windows 1.0.0, instruções de compilação e relatório de testes](docs/windows-v1.0.0.md)
+Versão Windows atual **1.0.1**. [Instruções de compilação e relatório da versão 1.0.0](docs/windows-v1.0.0.md).
 
 ## Operação
 
