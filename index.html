@@ -1,118 +1,154 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-
+<!doctype html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Placar BJJ | Sergio Corrêa</title>
+    <link rel="icon" type="image/png" href="src/file_000000007eac820ea5685ab4a9be1658.png">
     <link rel="stylesheet" href="style.css">
-    <link rel="shortcut icon" href="./src/file_000000007eac820ea5685ab4a9be1658.png" type="image/x-icon">
-    <title>Placar BJJ</title>
+    <script defer src="match.js"></script>
+    <script defer src="script.js"></script>
 </head>
-
 <body>
-    <header>
-        <img src="./src/file_000000007eac820ea5685ab4a9be1658.png" alt="Logo do Placar" class="logo">
-        <p>Academia De Jiu-Jitsu Sergio Corrêa</p>
-
-        <input type="text" id="definir-tempo" placeholder="00:00">
-
-    </header>
-
-    <main>
-        <section class="contagem-tempo">
-            <div class="tempo-luta">
-                <time id="temporizador">00:00 min</time>
-
-                <div class="button">
-                    <button id="iniciar" onclick="iniciarCronometro()">Iniciar</button>
-                    <button id="reset" onclick="resetTempo()">Resetar Tempo</button>
-                </div>
+    <div class="shell">
+        <header class="site-header">
+            <div class="brand">
+                <img src="src/file_000000007eac820ea5685ab4a9be1658.png" width="52" height="52" alt="Logo da Academia de Jiu-Jitsu Sergio Corrêa">
+                <div><h1>Placar BJJ</h1><p>Academia de Jiu-Jitsu Sergio Corrêa</p></div>
             </div>
-        </section>
+            <div class="header-actions">
+                <button id="shortcuts" type="button">Atalhos</button>
+                <button id="fullscreen" type="button" aria-keyshortcuts="F">Tela cheia</button>
+                <button id="new-match" type="button">Nova luta</button>
+            </div>
+        </header>
 
-        <section class="atletas">
-            <div class="atleta01">
-                <input type="text" id="atleta01" placeholder="Atleta 01">
-                <div class="cor-faixa"></div>
-                <div class="pontuacao">
-                    <p><span id="contador-placar-at01">0</span> pts</p>
-                    <div class="btn-pontos">
-                        <button id="add-ponto-at01-02" onclick="contarPontuaçãoMais02()">+2</button>
-                        <button id="add-ponto-at01-03" onclick="contarPontuaçãoMais03()">+3</button>
-                        <button id="add-ponto-at01-04" onclick="contarPontuaçãoMais04()">+4</button>
-                        <button id="remover-ultimo-ponto-at01" onclick="removerUltimoPontoAt01()">Remover Ponto</button>
-                    </div>
+        <main class="arena" aria-label="Placar da luta">
+            <section class="athlete athlete-0" data-athlete="0" aria-label="Canto branco">
+                <div class="athlete-head">
+                    <label for="athlete-0">Canto branco</label>
+                    <input id="athlete-0" data-name placeholder="Atleta 1" maxlength="50" autocomplete="off">
                 </div>
-
-                <div class="bloco-vantagem-falta">
-                    <div class="vantagem">
-                        <p class="titulo-vantagem">Vantagem</p>
-                        <span id="contador-vantagem-at01">0</span>
-                        <div class="vantagem-buttons">
-                            <button class="add-vantagem" id="add-vantagem-at01" onclick="addvantagem()">+</button>
-                            <button class="remove-vantagem" id="remove-vantagem-at01"
-                                onclick="removevantagem()">-</button>
+                <div class="score">
+                    <span>Pontos</span>
+                    <strong data-points>0</strong>
+                    <span class="score-flash" aria-hidden="true"></span>
+                </div>
+                <div class="score-buttons">
+                    <button type="button" data-score="2" aria-label="Adicionar 2 pontos ao canto branco" aria-keyshortcuts="1">+2<kbd>1</kbd></button>
+                    <button type="button" data-score="3" aria-label="Adicionar 3 pontos ao canto branco" aria-keyshortcuts="2">+3<kbd>2</kbd></button>
+                    <button type="button" data-score="4" aria-label="Adicionar 4 pontos ao canto branco" aria-keyshortcuts="3">+4<kbd>3</kbd></button>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <span>Vantagens</span><strong data-count="advantages">0</strong>
+                        <div>
+                            <button type="button" data-adjust="advantages" data-delta="-1" aria-label="Remover vantagem do canto branco">−</button>
+                            <button type="button" data-adjust="advantages" data-delta="1" aria-label="Adicionar vantagem ao canto branco">+</button>
                         </div>
                     </div>
-
-
-                    <div class="faltas">
-                        <p class="titulo-faltas">Faltas</p>
-                        <span id="contador-faltas-at01">0</span>
-                        <div class="faltas-buttons">
-                            <button class="add-faltas" id="add-faltas-at01" onclick="addfaltas()">+</button>
-                            <button class="remove-faltas" id="remove-faltas-at01" onclick="removefaltas()">-</button>
+                    <div class="stat">
+                        <span>Faltas</span><strong data-count="penalties">0</strong>
+                        <div>
+                            <button type="button" data-adjust="penalties" data-delta="-1" aria-label="Remover falta do canto branco">−</button>
+                            <button type="button" data-adjust="penalties" data-delta="1" aria-label="Adicionar falta ao canto branco">+</button>
                         </div>
                     </div>
                 </div>
-            </div>
+                <div class="history">
+                    <div><span>Histórico de pontos</span><p data-history>Sem pontuações</p></div>
+                    <button type="button" data-undo>Desfazer ponto</button>
+                </div>
+            </section>
+            <section class="clock" aria-label="Cronômetro da luta">
+                <p id="clock-status" class="clock-status" role="status">Pronto</p>
+                <div id="clock-time" class="clock-time" role="timer" aria-live="off">05:00</div>
+                <p class="clock-label">Tempo de luta</p>
+                <button id="toggle-clock" class="primary" type="button" aria-keyshortcuts="Space">Iniciar</button>
+                <button id="reset-clock" class="quiet" type="button">Reiniciar tempo</button>
 
-            <h1>VS</h1>
-
-            <div class="atleta02">
-                <input type="text" id="atleta02" placeholder="Atleta 02">
-                <div class="pontuacao">
-                    <p><span id="contador-placar-at02">0</span> pts</p>
-                    <div class="btn-pontos">
-                        <button id="add-ponto-at02-02" onclick="contarPontuaçãoMais02At02()">+2</button>
-                        <button id="add-ponto-at02-03" onclick="contarPontuaçãoMais03At02()">+3</button>
-                        <button id="add-ponto-at02-04" onclick="contarPontuaçãoMais04At02()">+4</button>
-                        <button id="remover-ultimo-ponto-at02" onclick="removerUltimoPontoAt02()">Remover
-                            Ponto</button>
+                <div class="clock-settings">
+                    <form id="duration-form" novalidate>
+                        <fieldset id="duration-fields">
+                            <legend>Duração da luta</legend>
+                            <div class="duration">
+                                <label for="minutes"><input id="minutes" type="text" inputmode="numeric" value="05" maxlength="2" autocomplete="off"> Min</label>
+                                <span aria-hidden="true">:</span>
+                                <label for="seconds"><input id="seconds" type="text" inputmode="numeric" value="00" maxlength="2" autocomplete="off"> Seg</label>
+                            </div>
+                        </fieldset>
+                        <p id="duration-error" class="error" role="status"></p>
+                    </form>
+                    <div class="audio-settings">
+                        <label for="volume">Volume <span id="volume-value">75%</span></label>
+                        <input id="volume" type="range" min="0" max="100" value="75">
+                        <button id="test-audio" type="button">Testar sinal</button>
                     </div>
                 </div>
-
-
-                <div class="bloco-vantagem-falta">
-                    <div class="vantagem">
-                        <p class="titulo-vantagem">Vantagem</p>
-                        <span id="contador-vantagem-at02">0</span>
-                        <div class="vantagem-buttons">
-                            <button class="add-vantagem" id="add-vantagem-at02" onclick="addvantagemAt02()">+</button>
-                            <button class="remove-vantagem" id="remove-vantagem-at02"
-                                onclick="removevantagemAt02()">-</button>
+            </section>
+            <section class="athlete athlete-1" data-athlete="1" aria-label="Canto vermelho">
+                <div class="athlete-head">
+                    <label for="athlete-1">Canto vermelho</label>
+                    <input id="athlete-1" data-name placeholder="Atleta 2" maxlength="50" autocomplete="off">
+                </div>
+                <div class="score">
+                    <span>Pontos</span>
+                    <strong data-points>0</strong>
+                    <span class="score-flash" aria-hidden="true"></span>
+                </div>
+                <div class="score-buttons">
+                    <button type="button" data-score="2" aria-label="Adicionar 2 pontos ao canto vermelho" aria-keyshortcuts="7">+2<kbd>7</kbd></button>
+                    <button type="button" data-score="3" aria-label="Adicionar 3 pontos ao canto vermelho" aria-keyshortcuts="8">+3<kbd>8</kbd></button>
+                    <button type="button" data-score="4" aria-label="Adicionar 4 pontos ao canto vermelho" aria-keyshortcuts="9">+4<kbd>9</kbd></button>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <span>Vantagens</span><strong data-count="advantages">0</strong>
+                        <div>
+                            <button type="button" data-adjust="advantages" data-delta="-1" aria-label="Remover vantagem do canto vermelho">−</button>
+                            <button type="button" data-adjust="advantages" data-delta="1" aria-label="Adicionar vantagem ao canto vermelho">+</button>
                         </div>
                     </div>
-
-                    <div class="faltas">
-                        <p class="titulo-faltas">Faltas</p>
-                        <span id="contador-faltas-at02">0</span>
-                        <div class="faltas-buttons">
-                            <button class="add-faltas" id="add-faltas-at02" onclick="addfaltasAt02()">+</button>
-                            <button class="remove-faltas" id="remove-faltas-at02"
-                                onclick="removefaltasAt02()">-</button>
+                    <div class="stat">
+                        <span>Faltas</span><strong data-count="penalties">0</strong>
+                        <div>
+                            <button type="button" data-adjust="penalties" data-delta="-1" aria-label="Remover falta do canto vermelho">−</button>
+                            <button type="button" data-adjust="penalties" data-delta="1" aria-label="Adicionar falta ao canto vermelho">+</button>
                         </div>
                     </div>
                 </div>
-            </div>
-            </div>
-        </section>
+                <div class="history">
+                    <div><span>Histórico de pontos</span><p data-history>Sem pontuações</p></div>
+                    <button type="button" data-undo>Desfazer ponto</button>
+                </div>
+            </section>
+        </main>
 
-    </main>
+        <footer class="site-footer">
+            <span id="storage-status" role="status">Salvamento local</span>
+            <span id="notice" role="status"></span>
+        </footer>
+    </div>
 
+    <audio id="alarm" preload="auto" src="sons/u_inx5oo5fv3-alarm-327234.mp3"></audio>
 
-    <script src="script.js"></script>
-
+    <dialog id="confirmation" aria-labelledby="confirm-title" aria-describedby="confirm-copy">
+        <h2 id="confirm-title"></h2>
+        <p id="confirm-copy"></p>
+        <form method="dialog" class="dialog-actions">
+            <button value="cancel" autofocus>Cancelar</button>
+            <button value="confirm" class="primary" id="confirm-action">Confirmar</button>
+        </form>
+    </dialog>
+    <dialog id="shortcut-dialog" aria-labelledby="shortcut-title">
+        <h2 id="shortcut-title">Atalhos de teclado</h2>
+        <dl>
+            <dt><kbd>Espaço</kbd></dt><dd>Iniciar, pausar ou retomar</dd>
+            <dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>+2, +3 e +4 no canto branco</dd>
+            <dt><kbd>7</kbd> <kbd>8</kbd> <kbd>9</kbd></dt><dd>+2, +3 e +4 no canto vermelho</dd>
+            <dt><kbd>F</kbd></dt><dd>Alternar tela cheia</dd>
+        </dl>
+        <form method="dialog" class="dialog-actions"><button autofocus>Fechar</button></form>
+    </dialog>
 </body>
-
 </html>
