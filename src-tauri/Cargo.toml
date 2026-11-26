@@ -1,0 +1,13 @@
+[package]
+name = "placar-bjj"
+version = "1.0.0"
+description = "Placar offline de jiu-jitsu"
+edition = "2021"
+rust-version = "1.90"
+
+[build-dependencies]
+tauri-build = "2"
+
+[dependencies]
+tauri = "2.12"
+tauri-plugin-single-instance = "2.5.5"
