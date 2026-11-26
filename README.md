@@ -4,6 +4,15 @@ Placar offline da Academia de Jiu-Jitsu Sergio Corrêa. Abra [index.html](index.
 
 Versão Windows atual **1.0.1**. [Instruções de compilação e relatório da versão 1.0.0](docs/windows-v1.0.0.md).
 
+| Instalador NSIS para Windows x64 | WebView2 Evergreen |
+| --- | --- |
+| [Leve](dist/Placar-BJJ-1.0.1-Windows-x64-Light-Setup.exe) | Usa o runtime já instalado. Se ele estiver ausente, baixa o bootstrapper oficial da Microsoft e precisa de internet durante a instalação. |
+| [Offline](dist/Placar-BJJ-1.0.1-Windows-x64-Setup.exe) | Inclui o instalador completo do runtime para máquinas sem acesso à internet. |
+
+Com o WebView2 instalado, o Placar funciona offline nas duas opções. Para atualizar, feche o Placar e execute o instalador para o mesmo usuário. Na desinstalação, mantenha desmarcada a opção de apagar os dados para preservá-los.
+
+Para gerar o instalador leve e seu arquivo SHA-256, execute `node scripts/build-windows.cjs --light`. Sem `--light`, o script gera o pacote offline.
+
 ## Operação
 
 1. Digite os nomes nos cantos branco e vermelho. Abra **Configurações** e ajuste os campos **Min** e **Seg**. A duração padrão é cinco minutos e os valores aceitos vão de 00:01 a 99:59.

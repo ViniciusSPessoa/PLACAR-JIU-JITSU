@@ -10,7 +10,14 @@ async function build() {
     const root = resolve(__dirname, '..');
     const target = 'x86_64-pc-windows-msvc';
     const targetDir = join(root, 'src-tauri', 'target');
-    const result = spawnSync('cargo', ['tauri', 'build', '--target', target, '--bundles', 'nsis'], {
+    const options = process.argv.slice(2);
+    if (options.length > 1 || (options.length === 1 && options[0] !== '--light')) {
+        throw new Error('Uso: node scripts/build-windows.cjs [--light]');
+    }
+    const light = options.includes('--light');
+    const args = ['tauri', 'build', '--target', target, '--bundles', 'nsis'];
+    if (light) args.push('--config', '{"bundle":{"windows":{"webviewInstallMode":{"type":"downloadBootstrapper","silent":true}}}}');
+    const result = spawnSync('cargo', args, {
         cwd: root,
         env: { ...process.env, CARGO_TARGET_DIR: targetDir },
         stdio: 'inherit'
@@ -24,7 +31,7 @@ async function build() {
     if (!outputs.includes(expected)) throw new Error('Instalador esperado não encontrado: ' + expected);
     const distribution = join(root, 'dist');
     await mkdir(distribution, { recursive: true });
-    const name = 'Placar-BJJ-' + config.version + '-Windows-x64-Setup.exe';
+    const name = 'Placar-BJJ-' + config.version + '-Windows-x64-' + (light ? 'Light-' : '') + 'Setup.exe';
     const installer = join(distribution, name);
     await copyFile(join(bundle, expected), installer);
     const sha256 = createHash('sha256');
