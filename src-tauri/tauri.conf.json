@@ -19,6 +19,7 @@
         "maximized": true,
         "resizable": true,
         "devtools": false,
+        "browserAcceleratorKeys": false,
         "useHttpsScheme": true
       }
     ],
