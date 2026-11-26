@@ -13,18 +13,18 @@ Abra um novo PowerShell na raiz do projeto, após instalar as ferramentas indica
 ```powershell
 rustup default stable-x86_64-pc-windows-msvc
 rustup target add x86_64-pc-windows-msvc
-cargo install tauri-cli --version "^2" --locked
+cargo install tauri-cli --version 2.12.6 --locked
 node --test match.test.cjs tests/contrast.test.cjs
 node scripts/build-windows.cjs
 ```
 
-O script copia o instalador compilado para `dist/Placar-BJJ-1.0.0-Windows-x64-Setup.exe`, escreve o arquivo `.sha256` e imprime o caminho absoluto, o tamanho em bytes e o SHA-256. O primeiro build também resolve as dependências Rust do aplicativo e gera `src-tauri/Cargo.lock`. Registre esse arquivo junto à validação de um build bem-sucedido.
+O script copia o instalador compilado para `dist/Placar-BJJ-1.0.0-Windows-x64-Setup.exe`, escreve o arquivo `.sha256` e imprime o caminho absoluto, o tamanho em bytes e o SHA-256. O primeiro build também resolve as dependências Rust do aplicativo e gera `src-tauri/Cargo.lock`. O lockfile do build validado está versionado.
 
 A versão web continua disponível pelo [index.html](../index.html). O desktop embute cópias dos quatro arquivos web e dos dois recursos originais presentes na árvore de trabalho. A tag `pre-windows-v1.0.0` guarda a Arena aprovada no commit `c70f84e`. A remoção das legendas dos seis atalhos no HTML já existia localmente e foi preservada fora dos commits desta etapa.
 
 ## Instalação e operação
 
-Quando o instalador estiver disponível, confira o hash e a assinatura do arquivo recebido no PowerShell.
+Confira o hash e a assinatura do arquivo recebido no PowerShell.
 
 ```powershell
 $setup = 'dist/Placar-BJJ-1.0.0-Windows-x64-Setup.exe'
@@ -43,22 +43,42 @@ O perfil WebView2 usa `%LOCALAPPDATA%\br.com.placarbjj.sergiocorrea\WebView2`. O
 
 ## Relatório de testes
 
-Ambiente verificado em 26/11/2026, Windows x64 build 26200, Node.js 24.14.1 e WebView2 158.0.4370.33. Rust, Cargo, MSVC C++ e Windows SDK não foram encontrados. A execução de `node scripts/build-windows.cjs` terminou com `spawnSync cargo ENOENT`.
+Validação em 26/11/2026 no Windows 11 x64 25H2, build 26200, com Node.js 24.14.1 e WebView2 158.0.4370.33. Build de produção com Rust e Cargo 1.100.0, MSVC 19.44.35230, Windows SDK 10.0.26100.0, Tauri 2.12.7 e Tauri CLI 2.12.6. A instalação das ferramentas terminou sem solicitar reinicialização.
 
 | Verificação | Resultado observado |
 | --- | --- |
-| Antes da integração, lógica e contraste | 6 testes aprovados |
-| Antes da integração, Chrome com a rede desativada | Fluxos do placar e as quatro resoluções aprovados. Tela cheia nativa e áudio local verificados |
-| Depois da integração, arquivos destinados ao pacote | HTML, CSS, JavaScript, logotipo e MP3 conferidos byte a byte com a árvore de trabalho |
-| Depois da integração, lógica e contraste | 6 testes aprovados |
-| Depois da integração, cópia do pacote no Chrome offline | As quatro resoluções e os fluxos de arbitragem, recuperação, atalhos, áudio e tela cheia passaram, sem erros de console |
-| Aplicativo Tauri, instalador NSIS e medições | Pendentes da compilação. Sem binário, SHA-256, assinatura verificada, capturas do Windows ou medidas de RAM, CPU, disco e tamanho do instalador |
+| Lógica e contraste | 6 testes aprovados antes e depois da integração |
+| Fonte destinada ao pacote | HTML, CSS, JavaScript, logotipo e MP3 idênticos à árvore de trabalho |
+| Instalação limpa do Placar para o usuário atual | NSIS silencioso com código 0, versão instalada 1.0.0, atalhos válidos no menu Iniciar e na área de trabalho |
+| Janela e instância única | Primeira execução maximizada, fechamento normal e segunda instância encerrada sem criar outra janela |
+| Recuperação | Com a luta ativa, o processo foi encerrado à força. Nome, pontuação, tempo salvo e volume foram recuperados em pausa. Cancelar manteve a pausa e confirmar permitiu retomar |
+| Reinstalação da mesma versão | Preservou o placar, a luta pausada, os nomes, a duração e o volume |
+| Desinstalação | Removidos os executáveis, os dois atalhos e a entrada de desinstalação. O perfil WebView2 foi preservado |
+| Regressão no Placar instalado | Pontuação, correções, vantagens, faltas, históricos, Nova luta, atalhos, configurações, sinal único, teste de áudio, volume, recuperação de dados inválidos, início, pausa, retomada, reinício e encerramento passaram |
+| Cronometragem nativa | Para 12 s configurados, 12.116 ms de parede observados, descontada a pausa e incluindo a latência de observação do teste |
+| Funcionamento offline | WebView2 com rede emulada como desconectada e cache desabilitado. Todas as requisições observadas foram para o protocolo local do app. Tela cheia nativa e console sem erros |
+| Identidade visual | Comparação lado a lado de Chrome e WebView2 em 1280×720, 1366×768, 1920×1080 e 2560×1440. Composição, tipografia, cores e controles correspondentes nas quatro áreas de conteúdo |
 
-### Validação pendente do executável e do instalador
+As capturas em perspectiva de conteúdo foram feitas na WebView2 do executável instalado, com as quatro dimensões emuladas. A [comparação visual](../dist/comparativo-arena.png) e as [capturas nativas](../dist/capturas-windows) acompanham a distribuição.
 
-- Em uma instalação limpa do Windows x64, desconecte a rede e instale com uma conta padrão. Em uma VM de teste sem WebView2, repita para exercitar o instalador offline incluído. Registre quando houver solicitação de elevação e verifique idioma, ícone e atalhos.
-- Abra o placar e compare com a Arena web nas mesmas dimensões da área de conteúdo em 1280×720, 1366×768, 1920×1080 e 2560×1440. Capture o aplicativo instalado, a tela cheia e o painel de configurações. Abra pelo segundo atalho e confirme que a janela em uso ganha foco.
-- Execute os fluxos de relógio, placar e arbitragem descritos no guia. Compare uma contagem de 60 segundos com uma referência externa, verifique pausa, retomada, reinício, sinal único, volume, histórico, atalhos, vantagens, faltas, correções e Nova luta. Repita com a rede desativada.
-- Com uma luta ativa e mudanças de nome, pontos e volume, encerre o processo pelo Gerenciador de Tarefas. Reabra e confirme que a luta volta pausada, aguarda confirmação e preserva os valores gravados. Em um perfil descartável, teste também a recuperação de dados inválidos.
-- Reinstale mantendo os dados, verifique o estado e desinstale. Confirme remoção dos atalhos e opção de preservar o perfil do usuário.
-- Meça RAM do processo principal e dos subprocessos WebView2 do placar, CPU em janelas de 60 segundos em repouso e com contagem ativa, espaço em disco da instalação e do perfil separadamente, tamanho do instalador e SHA-256. Registre o método, a máquina e os valores observados.
+### Instalador
+
+- [Placar-BJJ-1.0.0-Windows-x64-Setup.exe](../dist/Placar-BJJ-1.0.0-Windows-x64-Setup.exe), 301.762.609 bytes (287,78 MiB).
+- [Arquivo SHA-256](../dist/Placar-BJJ-1.0.0-Windows-x64-Setup.exe.sha256). Valor verificado com PowerShell e Node.js, `3a2f4e42265d2cafbc6a9ec4740c0e5742cc0cdce5316c2c85544d4bffbdf82c`.
+- Authenticode do instalador do Placar, `NotSigned`. O instalador independente do WebView2 incluído tem 294.302.984 bytes e assinatura válida da Microsoft.
+- Arquivos instalados do Placar, 10.425.524 bytes (9,94 MiB), excluindo o perfil WebView2 e o runtime compartilhado.
+
+### Medições do aplicativo instalado
+
+| Cenário | Duração observada | RAM média | Pico amostrado de RAM | CPU média |
+| --- | --- | --- | --- | --- |
+| Em repouso | 65,99 s | 486,15 MiB | 494,57 MiB | 0,377% |
+| Cronômetro em andamento | 66,37 s | 501,51 MiB | 523,79 MiB | 0,194% |
+
+A RAM é a soma do working set do processo do Placar e dos processos filhos, medida em sete amostras por cenário. Páginas compartilhadas podem aparecer mais de uma vez na soma. A CPU foi calculada pela diferença do tempo de processador acumulado na árvore de processos, normalizada pelos 12 processadores lógicos. Os valores descrevem uma execução nesta máquina.
+
+O perfil WebView2 continha 9.658.005 bytes (9,21 MiB) em 212 arquivos após a validação. O tamanho em disco informado é a soma dos comprimentos lógicos dos arquivos.
+
+### Cobertura da instalação offline
+
+O runtime WebView2 já existia nesta máquina. O instalador offline da Microsoft foi incluído no NSIS. A instalação foi testada em um perfil sem Placar BJJ, em Windows com WebView2 presente. A instalação com a rede realmente desconectada em uma máquina sem WebView2 permanece pendente. Este Windows é edição Home Single Language e o ambiente não forneceu uma VM limpa para esse cenário.

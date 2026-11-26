@@ -7,7 +7,8 @@ const { pathToFileURL } = require('node:url');
 const { setTimeout: sleep } = require('node:timers/promises');
 
 const root = resolve(__dirname, '..');
-const entry = pathToFileURL(join(root, 'index.html')).href;
+const nativePort = process.env.BJJ_NATIVE_PORT;
+const entry = nativePort ? 'https://tauri.localhost/' : pathToFileURL(join(root, 'index.html')).href;
 const executable = process.env.BJJ_CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const sizes = [[1280, 720], [1366, 768], [1920, 1080], [2560, 1440]];
 
@@ -21,19 +22,19 @@ async function until(check, description) {
 }
 
 async function run() {
-    const profile = await mkdtemp(join(tmpdir(), 'bjj-test-'));
-    const screenshots = join(root, 'docs', 'capturas', 'arena');
+    const profile = nativePort ? null : await mkdtemp(join(tmpdir(), 'bjj-test-'));
+    const screenshots = process.env.BJJ_SCREENSHOT_DIR || join(root, 'docs', 'capturas', 'arena');
     await mkdir(screenshots, { recursive: true });
-    const chrome = spawn(executable, ['--headless', '--window-size=1280,720', '--no-first-run', '--disable-background-networking',
+    const chrome = nativePort ? null : spawn(executable, ['--headless', '--window-size=1280,720', '--no-first-run', '--disable-background-networking',
         '--remote-debugging-port=0', '--user-data-dir=' + profile, 'about:blank'], {
         windowsHide: true, stdio: ['ignore', 'ignore', 'pipe']
     });
     let diagnostics = '';
-    chrome.stderr.on('data', chunk => { diagnostics += chunk; });
-    chrome.on('error', error => { diagnostics += error.message; });
+    chrome?.stderr.on('data', chunk => { diagnostics += chunk; });
+    chrome?.on('error', error => { diagnostics += error.message; });
     let socket;
     try {
-        const port = await until(async () => {
+        const port = nativePort || await until(async () => {
             if (chrome.exitCode !== null) throw new Error('Chrome encerrou: ' + diagnostics);
             try {
                 return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0];
@@ -41,7 +42,14 @@ async function run() {
                 return false;
             }
         }, 'porta DevTools');
-        const [page] = await (await fetch('http://127.0.0.1:' + port + '/json/list')).json();
+        const page = await until(async () => {
+            try {
+                const targets = await (await fetch('http://127.0.0.1:' + port + '/json/list')).json();
+                return targets.find(target => target.type === 'page' && (!nativePort || target.url.startsWith(entry)));
+            } catch {
+                return false;
+            }
+        }, 'página do placar');
         socket = new WebSocket(page.webSocketDebuggerUrl);
         await new Promise((resolve, reject) => {
             socket.addEventListener('open', resolve, { once: true });
@@ -77,7 +85,7 @@ async function run() {
         async function load() {
             const navigated = await send('Page.navigate', { url: entry });
             assert.equal(navigated.errorText, undefined);
-            await until(() => js('location.protocol === "file:" && document.readyState === "complete" && typeof BjjMatch !== "undefined"').catch(() => false), 'abertura por arquivo');
+            await until(() => js('location.href === ' + JSON.stringify(entry) + ' && document.readyState === "complete" && typeof BjjMatch !== "undefined"').catch(() => false), 'abertura do placar');
         }
         const text = selector => js('document.querySelector(' + JSON.stringify(selector) + ').textContent');
         const click = selector => js('document.querySelector(' + JSON.stringify(selector) + ').click()');
@@ -98,6 +106,7 @@ async function run() {
         const points = corner => text('.athlete-' + corner + ' [data-points]');
 
         for (const method of ['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable']) await send(method);
+        if (nativePort) await send('Network.setCacheDisabled', { cacheDisabled: true });
         await send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
         await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
         await load();
@@ -255,6 +264,9 @@ async function run() {
         await until(() => js('document.getElementById("settings").open'), 'configurações abertas');
         await setInput('minutes', '00');
         await setInput('seconds', '12');
+        await js(`window.finalSignals = 0;
+            document.querySelector("audio").addEventListener("playing", () => window.finalSignals++);`);
+        const clockStarted = performance.now();
         await clickNative('#toggle-clock');
         await expectStatus('Em andamento');
         await sleep(200);
@@ -269,7 +281,9 @@ async function run() {
         await capture('1366x768-em-andamento');
         await click('#toggle-clock');
         await expectStatus('Pausado');
+        const pausedAt = performance.now();
         await capture('1366x768-pausado');
+        const resumedAt = performance.now();
         await click('#toggle-clock');
         const progress = () => js('Number(document.querySelector(".clock").style.getPropertyValue("--final-progress"))');
         const first = await until(async () => (await progress()) >= .45 && await progress(), 'realce progressivo do cronômetro');
@@ -277,6 +291,13 @@ async function run() {
         assert.ok(await progress() > first);
         await capture('1366x768-segundos-finais');
         await expectStatus('Encerrado');
+        const measuredMs = performance.now() - clockStarted - (resumedAt - pausedAt);
+        assert.ok(Math.abs(measuredMs - 12000) < 650, 'cronômetro observado: ' + measuredMs.toFixed(0) + ' ms');
+        if (nativePort) {
+            await until(() => js('window.finalSignals === 1'), 'reprodução do sinal de encerramento');
+            assert.equal(await js('window.finalSignals'), 1);
+        }
+        console.log('Contagem configurada para 12 s: ' + measuredMs.toFixed(0) + ' ms de parede observados, descontada a pausa.');
         await sleep(320);
         await capture('1366x768-encerrado');
         console.log('Nomes longos, placares de 2 e 3 dígitos, estados do cronômetro e painel retrátil OK.');
@@ -298,6 +319,7 @@ async function run() {
         await clickNative('#fullscreen');
         await until(() => js('Boolean(document.fullscreenElement || window.fullscreenFailure)'), 'resposta nativa de tela cheia');
         const fullscreenFailure = await js('window.fullscreenFailure || ""');
+        if (nativePort) assert.equal(fullscreenFailure, '', 'tela cheia nativa');
         if (fullscreenFailure) {
             assert.match(await text('#notice'), /Tela cheia indisponível/);
             await js(`(() => {
@@ -319,19 +341,19 @@ async function run() {
         await until(async () => (await text('#fullscreen')) === 'Tela cheia', 'saída de tela cheia');
         console.log(fullscreenFailure ? 'Tela cheia: fluxo simulado e recusa nativa tratada (' + fullscreenFailure + ').' : 'Tela cheia nativa OK.');
         assert.deepEqual(errors, []);
-        assert.ok(requests.length > 0 && requests.every(url => url.startsWith('file:')), requests.join('\n'));
+        assert.ok(requests.length > 0 && requests.every(url => url.startsWith(nativePort ? entry : 'file:')), requests.join('\n'));
         console.log('Fluxos de arbitragem, recuperação, áudio, atalhos, modo offline e console OK.');
     } catch (error) {
         if (!socket) console.error(diagnostics);
         throw error;
     } finally {
         socket?.close();
-        if (chrome.exitCode === null && chrome.signalCode === null && chrome.pid) {
+        if (chrome && chrome.exitCode === null && chrome.signalCode === null && chrome.pid) {
             const exited = new Promise(resolve => chrome.once('exit', resolve));
             chrome.kill();
             await exited;
         }
-        await rm(profile, { recursive: true, force: true, maxRetries: 5 }).catch(error => {
+        if (profile) await rm(profile, { recursive: true, force: true, maxRetries: 5 }).catch(error => {
             console.warn('Perfil temporário retido:', error.code);
         });
     }
